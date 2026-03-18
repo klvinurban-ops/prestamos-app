@@ -44,8 +44,10 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
   const rateNum = paymentFrequency === 'biweekly' ? 20 : parseFloat(interestRate) || 0
   const totalAmount = computeTotal(amountNum, rateNum)
   const paidNum = parseFloat(amountAlreadyPaid) || 0
-  const initialRemaining = Math.max(0, Math.min(totalAmount, totalAmount - paidNum))
-  const remainingBalance = loan ? Number(loan.remaining_balance) : initialRemaining
+  const collectedAmount = loan
+    ? Math.max(0, Number(loan.total_amount) - Number(loan.remaining_balance))
+    : paidNum
+  const previewRemainingBalance = Math.max(0, Math.min(totalAmount, totalAmount - collectedAmount))
   const biweeklyPreview =
     paymentFrequency === 'biweekly' && amountNum > 0
       ? getLoanSchedule({
@@ -90,6 +92,10 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
       setError('El monto ya cobrado no puede ser mayor al total a cobrar.')
       return
     }
+    if (loan && collectedAmount > totalAmount) {
+      setError('Lo ya cobrado supera el nuevo total del préstamo. Ajusta el monto o la modalidad.')
+      return
+    }
     setSaving(true)
     try {
       await onSubmit({
@@ -97,7 +103,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
         amount: amountNum,
         interest_rate: rateNum,
         total_amount: totalAmount,
-        remaining_balance: loan ? remainingBalance : initialRemaining,
+        remaining_balance: previewRemainingBalance,
         start_date: startDate,
         due_date: dueDate,
         payment_frequency: paymentFrequency,
@@ -140,7 +146,6 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
             className="input"
             value={paymentFrequency}
             onChange={(e) => setPaymentFrequency(e.target.value as PaymentFrequency)}
-            disabled={!!loan}
           >
             <option value="monthly">Mensual / por fecha final</option>
             <option value="biweekly">3 quincenas</option>
@@ -212,7 +217,16 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
             placeholder="0 si es préstamo nuevo"
           />
           <p className="mt-1 text-xs text-slate-500">
-            Si el cliente ya te ha pagado algo, ingrésalo aquí. Saldo restante: {formatCurrency(initialRemaining)}
+            Si el cliente ya te ha pagado algo, ingrésalo aquí. Saldo restante: {formatCurrency(previewRemainingBalance)}
+          </p>
+        </div>
+      )}
+      {loan && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-900">Ajuste de préstamo existente</p>
+          <p className="mt-1 text-sm text-amber-800">
+            Ya tienes cobrado {formatCurrency(collectedAmount)} en este préstamo. Si cambias monto, fechas o modalidad,
+            el saldo restante se recalculará automáticamente a {formatCurrency(previewRemainingBalance)}.
           </p>
         </div>
       )}
@@ -266,7 +280,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
       {loan && (
         <div className="rounded-lg bg-amber-50 p-4">
           <p className="text-sm text-slate-600">Saldo restante</p>
-          <p className="text-xl font-bold text-slate-900">{formatCurrency(remainingBalance)}</p>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(previewRemainingBalance)}</p>
         </div>
       )}
       <div className="flex flex-col gap-3 pt-2 sm:flex-row">

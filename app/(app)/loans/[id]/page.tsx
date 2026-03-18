@@ -87,6 +87,9 @@ export default function LoanDetailPage() {
         <h1 className="page-title">
           Préstamo — {currentLoan.clients?.name ?? 'Cliente'}
         </h1>
+        <Link href={`/loans/${currentLoan.id}/edit`} className="btn-secondary w-full sm:ml-auto sm:w-auto">
+          Editar préstamo
+        </Link>
       </div>
 
       <div className="mb-6">
