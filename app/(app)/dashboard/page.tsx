@@ -1,17 +1,33 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import Link from 'next/link'
 import { normalizeLoanStatus } from '@/lib/loanStatus'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
 import { formatCurrency } from '@/lib/format'
 import { DashboardCard } from '@/components/DashboardCards'
 import MonthlyEarningsChart, { type MonthlyData } from '@/components/MonthlyEarningsChart'
+import StatusBanner from '@/components/StatusBanner'
 import type { Loan } from '@/types/database'
 import type { Payment } from '@/types/database'
 
 function getMonthKey(dateStr: string) {
   const d = new Date(dateStr)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function isWithinNextDays(dateStr: string, days: number) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dueDate = new Date(dateStr)
+  dueDate.setHours(0, 0, 0, 0)
+  const diff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  return diff >= 0 && diff <= days
+}
+
+function isSameDay(dateStr: string, target: Date) {
+  const date = new Date(dateStr)
+  return date.toDateString() === target.toDateString()
 }
 
 const MONTHS_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
@@ -45,6 +61,24 @@ export default function DashboardPage() {
   const totalInterest = totalToCollect - totalLent
   const activeLoans = normalizedLoans.filter((l) => l.status === 'active').length
   const overdueLoans = normalizedLoans.filter((l) => l.status === 'overdue').length
+  const openBalance = useMemo(
+    () => normalizedLoans
+      .filter((loan) => loan.status !== 'paid')
+      .reduce((sum, loan) => sum + Number(loan.remaining_balance), 0),
+    [normalizedLoans]
+  )
+  const dueSoonCount = useMemo(
+    () => normalizedLoans.filter((loan) => loan.status === 'active' && isWithinNextDays(loan.due_date, 7)).length,
+    [normalizedLoans]
+  )
+  const collectedToday = useMemo(() => {
+    const today = new Date()
+    return payments
+      .filter((payment) => isSameDay(payment.payment_date, today))
+      .reduce((sum, payment) => sum + Number(payment.amount), 0)
+  }, [payments])
+  const portfolioStatus = overdueLoans > 0 ? 'Requiere atención' : activeLoans > 0 ? 'Saludable' : 'Sin movimiento'
+  const hasPortfolioData = normalizedLoans.length > 0 || payments.length > 0
 
   const monthlyData: MonthlyData[] = useMemo(() => {
     const byMonth: Record<string, number> = {}
@@ -88,7 +122,57 @@ export default function DashboardPage() {
 
   return (
     <div className="page-shell">
-      <h1 className="mb-6 page-title sm:mb-8">Dashboard</h1>
+      <div className="page-header mb-5">
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Resumen ejecutivo de cartera y cobros.
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
+          <p className="text-slate-500">Estado general</p>
+          <p className="mt-1 font-semibold text-slate-900">{portfolioStatus}</p>
+        </div>
+      </div>
+
+      <div className="summary-grid mb-6">
+        <div className="summary-tile">
+          <p className="summary-label">Saldo por cobrar</p>
+          <p className="summary-value">{formatCurrency(openBalance)}</p>
+          <p className="mt-1 text-xs text-slate-500">Capital vivo fuera de los préstamos pagados.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Cobrado hoy</p>
+          <p className="summary-value">{formatCurrency(collectedToday)}</p>
+          <p className="mt-1 text-xs text-slate-500">Cobros registrados en la jornada actual.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Por vencer en 7 días</p>
+          <p className="summary-value">{dueSoonCount}</p>
+          <p className="mt-1 text-xs text-slate-500">Útil para anticipar seguimiento antes del atraso.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Actualizado</p>
+          <p className="summary-value text-lg sm:text-xl">{new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p className="mt-1 text-xs text-slate-500">Datos cargados desde Supabase en esta sesión.</p>
+        </div>
+      </div>
+
+      {!hasPortfolioData && (
+        <div className="mb-6">
+          <StatusBanner
+            variant="info"
+            title="Aún no hay datos para analizar"
+            message="Crea tus primeros clientes y préstamos para desbloquear métricas, cobros y señales de riesgo."
+            action={
+              <Link href="/clients/new" className="btn-primary w-full sm:w-auto">
+                Crear primer cliente
+              </Link>
+            }
+          />
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <DashboardCard
           title="Total prestado"
@@ -116,13 +200,35 @@ export default function DashboardPage() {
         <DashboardCard
           title="Préstamos vencidos"
           value={overdueLoans}
+          subtitle={overdueLoans > 0 ? 'Conviene revisar cobranzas hoy.' : 'Sin alertas críticas.'}
           icon="⚠️"
           variant={overdueLoans > 0 ? 'danger' : 'default'}
         />
       </div>
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link href="/payments" className="btn-primary">
+          Registrar cobro
+        </Link>
+        <Link href="/overdue" className="btn-secondary">
+          Revisar vencidos
+        </Link>
+        <Link href="/reports" className="btn-secondary">
+          Ver reportes
+        </Link>
+      </div>
+
       <div className="card mt-8 p-4 sm:mt-10 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold text-slate-900 sm:mb-6">Cobros por mes</h2>
-        <MonthlyEarningsChart data={monthlyData} />
+        {payments.length === 0 ? (
+          <StatusBanner
+            variant="info"
+            title="Todavía no hay cobros registrados"
+            message="Cuando registres pagos, aquí verás la evolución mensual de tu cartera."
+          />
+        ) : (
+          <MonthlyEarningsChart data={monthlyData} />
+        )}
       </div>
     </div>
   )

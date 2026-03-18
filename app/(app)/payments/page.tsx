@@ -5,6 +5,7 @@ import { normalizeLoanStatus } from '@/lib/loanStatus'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
 import { formatCurrency, formatDate } from '@/lib/format'
 import PaymentForm from '@/components/PaymentForm'
+import StatusBanner from '@/components/StatusBanner'
 import type { Loan } from '@/types/database'
 import type { Client } from '@/types/database'
 import type { Payment } from '@/types/database'
@@ -16,6 +17,14 @@ export default function PaymentsPage() {
   const [loans, setLoans] = useState<LoanWithClient[]>([])
   const [payments, setPayments] = useState<PaymentWithLoan[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedLoanIdFromUrl, setSelectedLoanIdFromUrl] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    setSelectedLoanIdFromUrl(params.get('loan'))
+  }, [])
 
   async function load() {
     const supabase = getSupabaseBrowser()
@@ -36,8 +45,28 @@ export default function PaymentsPage() {
     <div className="page-shell">
       <h1 className="mb-6 page-title sm:mb-8">Pagos</h1>
 
+      {successMessage && (
+        <div className="mb-4">
+          <StatusBanner variant="success" title="Pago registrado" message={successMessage} />
+        </div>
+      )}
+
       <div className="mb-8 sm:mb-10">
-        <PaymentForm loans={loans} onSuccess={load} />
+        <PaymentForm
+          loans={loans}
+          loading={loading}
+          initialLoanId={selectedLoanIdFromUrl}
+          onSuccess={async (details) => {
+            await load()
+            if (details) {
+              setSuccessMessage(
+                details.paidOff
+                  ? `Cobraste ${formatCurrency(details.amount)} a ${details.loanName}. El préstamo quedó liquidado.`
+                  : `Cobraste ${formatCurrency(details.amount)} a ${details.loanName}. Nuevo saldo: ${formatCurrency(details.newBalance)}.`
+              )
+            }
+          }}
+        />
       </div>
 
       <h2 className="mb-4 text-lg font-semibold text-slate-900">Historial de pagos</h2>

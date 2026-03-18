@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { formatCurrency } from '@/lib/format'
+import StatusBanner from '@/components/StatusBanner'
 import type { Loan, Client } from '@/types/database'
 
 type Props = {
@@ -88,7 +89,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        <StatusBanner variant="danger" message={error} />
       )}
       <div>
         <label className="label" htmlFor="client">Cliente *</label>

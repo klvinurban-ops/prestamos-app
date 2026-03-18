@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import StatusBanner from '@/components/StatusBanner'
 import type { Client, ClientInsert } from '@/types/database'
 
 type Props = {
@@ -44,7 +45,7 @@ export default function ClientForm({ client, onSubmit, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        <StatusBanner variant="danger" message={error} />
       )}
       <div>
         <label className="label" htmlFor="name">Nombre *</label>

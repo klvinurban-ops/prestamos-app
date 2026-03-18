@@ -31,6 +31,9 @@ body {
   .btn-secondary {
     @apply btn bg-slate-100 text-slate-800 hover:bg-slate-200 focus:ring-slate-400;
   }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-400;
+  }
   .btn-ghost {
     @apply btn bg-transparent hover:bg-slate-100 focus:ring-slate-300;
   }
@@ -57,5 +60,17 @@ body {
   }
   .empty-state {
     @apply card p-6 text-center text-slate-500 sm:p-8;
+  }
+  .summary-grid {
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4;
+  }
+  .summary-tile {
+    @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm;
+  }
+  .summary-label {
+    @apply text-sm font-medium text-slate-500;
+  }
+  .summary-value {
+    @apply mt-2 text-xl font-bold text-slate-900;
   }
 }

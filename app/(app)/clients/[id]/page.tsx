@@ -27,6 +27,7 @@ export default function ClientProfilePage() {
   const id = params.id as string
   const [client, setClient] = useState<Client | null>(null)
   const [loans, setLoans] = useState<Loan[]>([])
+  const [lastPaymentDate, setLastPaymentDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -36,8 +37,20 @@ export default function ClientProfilePage() {
         supabase.from('clients').select('*').eq('id', id).single(),
         supabase.from('loans').select('*').eq('client_id', id).order('created_at', { ascending: false }),
       ])
+      const currentLoans = ((loansRes.data ?? []) as Loan[]).map((loan) => normalizeLoanStatus(loan))
       setClient(clientRes.data ?? null)
-      setLoans(((loansRes.data ?? []) as Loan[]).map((loan) => normalizeLoanStatus(loan)))
+      setLoans(currentLoans)
+      if (currentLoans.length > 0) {
+        const { data: paymentRows } = await supabase
+          .from('payments')
+          .select('payment_date')
+          .in('loan_id', currentLoans.map((loan) => loan.id))
+          .order('payment_date', { ascending: false })
+          .limit(1)
+        setLastPaymentDate((paymentRows as { payment_date: string }[] | null)?.[0]?.payment_date ?? null)
+      } else {
+        setLastPaymentDate(null)
+      }
       setLoading(false)
     }
     load()
@@ -45,6 +58,14 @@ export default function ClientProfilePage() {
 
   if (loading) return <div className="page-shell">Cargando...</div>
   if (!client) return <div className="page-shell">Cliente no encontrado.</div>
+
+  const activeLoans = loans.filter((loan) => loan.status === 'active').length
+  const overdueLoans = loans.filter((loan) => loan.status === 'overdue').length
+  const pendingBalance = loans
+    .filter((loan) => loan.status !== 'paid')
+    .reduce((sum, loan) => sum + Number(loan.remaining_balance), 0)
+  const profileFields = [client.phone, client.document, client.address, client.notes]
+  const profileCompleteness = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100)
 
   return (
     <div className="page-shell">
@@ -57,6 +78,33 @@ export default function ClientProfilePage() {
           <Link href={`/clients/${id}/edit`} className="btn-primary w-full sm:w-auto">
             Editar
           </Link>
+        </div>
+      </div>
+
+      <div className="summary-grid mb-6">
+        <div className="summary-tile">
+          <p className="summary-label">Préstamos activos</p>
+          <p className="summary-value">{activeLoans}</p>
+          <p className="mt-1 text-xs text-slate-500">Operaciones vigentes del cliente.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Préstamos vencidos</p>
+          <p className="summary-value">{overdueLoans}</p>
+          <p className="mt-1 text-xs text-slate-500">Prioridad de seguimiento y cobranza.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Saldo pendiente</p>
+          <p className="summary-value">{formatCurrency(pendingBalance)}</p>
+          <p className="mt-1 text-xs text-slate-500">Exposición actual con este cliente.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Último pago / perfil</p>
+          <p className="summary-value text-lg sm:text-xl">
+            {lastPaymentDate ? formatDate(lastPaymentDate) : `${profileCompleteness}%`}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {lastPaymentDate ? 'Última fecha registrada de pago.' : 'Nivel de información completada del cliente.'}
+          </p>
         </div>
       </div>
 

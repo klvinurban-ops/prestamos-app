@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { normalizeLoanStatus } from '@/lib/loanStatus'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
+import ProgressBar from '@/components/ProgressBar'
+import StatusBanner from '@/components/StatusBanner'
 import { formatCurrency, formatDate, loanInterest } from '@/lib/format'
 import type { Loan } from '@/types/database'
 import type { Client } from '@/types/database'
@@ -42,6 +44,25 @@ export default function LoanDetailPage() {
   if (!loan) return <div className="page-shell">Préstamo no encontrado.</div>
 
   const currentLoan = normalizeLoanStatus(loan)
+  const totalAmount = Number(currentLoan.total_amount)
+  const remainingBalance = Number(currentLoan.remaining_balance)
+  const paidAmount = Math.max(0, totalAmount - remainingBalance)
+  const paidProgress = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dueDate = new Date(currentLoan.due_date)
+  dueDate.setHours(0, 0, 0, 0)
+  const dueDiffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const dueTone =
+    currentLoan.status === 'overdue' ? 'danger' : dueDiffDays <= 7 ? 'warning' : 'info'
+  const dueMessage =
+    currentLoan.status === 'paid'
+      ? 'Este préstamo ya está liquidado.'
+      : currentLoan.status === 'overdue'
+        ? `Está vencido desde hace ${Math.abs(dueDiffDays)} día${Math.abs(dueDiffDays) === 1 ? '' : 's'}.`
+        : dueDiffDays === 0
+          ? 'Vence hoy. Conviene registrar seguimiento o pago.'
+          : `Faltan ${dueDiffDays} día${dueDiffDays === 1 ? '' : 's'} para su vencimiento.`
 
   return (
     <div className="page-shell">
@@ -54,9 +75,54 @@ export default function LoanDetailPage() {
         </h1>
       </div>
 
+      <div className="mb-6">
+        <StatusBanner
+          variant={dueTone}
+          title="Seguimiento del préstamo"
+          message={dueMessage}
+          action={
+            currentLoan.status !== 'paid' ? (
+              <Link href={`/payments?loan=${currentLoan.id}`} className="btn-primary w-full sm:w-auto">
+                Registrar pago
+              </Link>
+            ) : undefined
+          }
+        />
+      </div>
+
+      <div className="summary-grid mb-6">
+        <div className="summary-tile">
+          <p className="summary-label">Cobrado</p>
+          <p className="summary-value">{formatCurrency(paidAmount)}</p>
+          <p className="mt-1 text-xs text-slate-500">Importe recuperado hasta ahora.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Pendiente</p>
+          <p className="summary-value">{formatCurrency(remainingBalance)}</p>
+          <p className="mt-1 text-xs text-slate-500">Saldo que sigue abierto en la operación.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Progreso</p>
+          <p className="summary-value">{Math.round(paidProgress)}%</p>
+          <p className="mt-1 text-xs text-slate-500">Avance de recuperación sobre el total a cobrar.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Estado</p>
+          <p className="summary-value text-lg sm:text-xl">{statusLabels[currentLoan.status] ?? currentLoan.status}</p>
+          <p className="mt-1 text-xs text-slate-500">Lectura rápida para seguimiento comercial.</p>
+        </div>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
         <div className="card p-4 sm:p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Resumen</h2>
+          <div className="mb-5">
+            <ProgressBar
+              value={paidProgress}
+              label="Recuperación del préstamo"
+              tone={currentLoan.status === 'paid' ? 'success' : currentLoan.status === 'overdue' ? 'danger' : 'default'}
+            />
+          </div>
           <dl className="space-y-3">
             <div>
               <dt className="text-sm text-slate-500">Cliente</dt>
@@ -112,7 +178,7 @@ export default function LoanDetailPage() {
             </div>
           </dl>
           {currentLoan.status !== 'paid' && Number(currentLoan.remaining_balance) > 0 && (
-            <Link href="/payments" className="btn-primary mt-4 inline-flex w-full sm:w-auto">
+            <Link href={`/payments?loan=${currentLoan.id}`} className="btn-primary mt-4 inline-flex w-full sm:w-auto">
               Registrar pago
             </Link>
           )}
