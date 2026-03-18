@@ -48,6 +48,8 @@ export interface Database {
           remaining_balance: number
           start_date: string
           due_date: string
+          payment_frequency: 'monthly' | 'biweekly'
+          installments_count: number
           status: 'active' | 'paid' | 'overdue'
           created_at: string
         }
@@ -60,6 +62,8 @@ export interface Database {
           remaining_balance: number
           start_date: string
           due_date: string
+          payment_frequency?: 'monthly' | 'biweekly'
+          installments_count?: number
           status?: 'active' | 'paid' | 'overdue'
           created_at?: string
         }
@@ -72,6 +76,8 @@ export interface Database {
           remaining_balance?: number
           start_date?: string
           due_date?: string
+          payment_frequency?: 'monthly' | 'biweekly'
+          installments_count?: number
           status?: 'active' | 'paid' | 'overdue'
           created_at?: string
         }
@@ -106,6 +112,7 @@ export interface Database {
   }
 }
 
+export type PaymentFrequency = Database['public']['Tables']['loans']['Row']['payment_frequency']
 export type Client = Database['public']['Tables']['clients']['Row']
 export type Loan = Database['public']['Tables']['loans']['Row']
 export type Payment = Database['public']['Tables']['payments']['Row']

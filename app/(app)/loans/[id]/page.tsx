@@ -4,6 +4,12 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { normalizeLoanStatus } from '@/lib/loanStatus'
+import {
+  getLoanFrequencyLabel,
+  getLoanInstallmentsCount,
+  getLoanProjectedMonthlyProfit,
+  getLoanSchedule,
+} from '@/lib/loanSchedule'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
 import ProgressBar from '@/components/ProgressBar'
 import StatusBanner from '@/components/StatusBanner'
@@ -63,6 +69,14 @@ export default function LoanDetailPage() {
         : dueDiffDays === 0
           ? 'Vence hoy. Conviene registrar seguimiento o pago.'
           : `Faltan ${dueDiffDays} día${dueDiffDays === 1 ? '' : 's'} para su vencimiento.`
+  const paymentFrequencyLabel = getLoanFrequencyLabel(currentLoan)
+  const installmentsCount = getLoanInstallmentsCount(currentLoan)
+  const schedule = getLoanSchedule(currentLoan)
+  const projectedMonthlyProfit = getLoanProjectedMonthlyProfit(currentLoan)
+  const estimatedInstallmentAmount = schedule[0]?.totalAmount ?? totalAmount
+  const averageProjectedProfit = projectedMonthlyProfit.length
+    ? projectedMonthlyProfit.reduce((sum, item) => sum + item.amount, 0) / projectedMonthlyProfit.length
+    : 0
 
   return (
     <div className="page-shell">
@@ -141,14 +155,32 @@ export default function LoanDetailPage() {
               <dd className="font-medium text-slate-900">{Number(currentLoan.interest_rate)}%</dd>
             </div>
             <div>
+              <dt className="text-sm text-slate-500">Modalidad</dt>
+              <dd className="font-medium text-slate-900">{paymentFrequencyLabel}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-slate-500">Cuotas estimadas</dt>
+              <dd className="font-medium text-slate-900">
+                {currentLoan.payment_frequency === 'biweekly' ? installmentsCount : 'Pago final'}
+              </dd>
+            </div>
+            <div>
               <dt className="text-sm text-slate-500">Total a cobrar</dt>
               <dd className="font-medium text-slate-900">{formatCurrency(Number(currentLoan.total_amount))}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-slate-500">Valor estimado por cuota</dt>
+              <dd className="font-medium text-slate-900">{formatCurrency(estimatedInstallmentAmount)}</dd>
             </div>
             <div>
               <dt className="text-sm text-slate-500">Ganancia (interés) de este préstamo</dt>
               <dd className="font-medium text-emerald-600">
                 {formatCurrency(loanInterest(Number(currentLoan.total_amount), Number(currentLoan.amount)))}
               </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-slate-500">Ganancia mensual proyectada</dt>
+              <dd className="font-medium text-emerald-600">{formatCurrency(averageProjectedProfit)}</dd>
             </div>
             <div>
               <dt className="text-sm text-slate-500">Saldo restante</dt>
@@ -182,6 +214,56 @@ export default function LoanDetailPage() {
               Registrar pago
             </Link>
           )}
+        </div>
+
+        <div className="card p-4 sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Calendario estimado</h2>
+          <StatusBanner
+            variant="info"
+            title={currentLoan.payment_frequency === 'biweekly' ? 'Plan de 3 quincenas' : 'Proyección mensual'}
+            message={
+              currentLoan.payment_frequency === 'biweekly'
+                ? 'Cada cuota reparte capital e interés del 20% total del préstamo.'
+                : 'La ganancia se distribuye de forma uniforme entre los meses comprendidos entre inicio y vencimiento.'
+            }
+          />
+          <div className="mt-4 space-y-3">
+            {currentLoan.payment_frequency === 'biweekly'
+              ? schedule.map((item) => (
+                  <div key={item.number} className="rounded-xl border border-slate-200 p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-900">Cuota {item.number}</p>
+                        <p className="text-sm text-slate-500">Vence {formatDate(item.dueDate)}</p>
+                      </div>
+                      <p className="text-base font-semibold text-slate-900">
+                        {formatCurrency(item.totalAmount)}
+                      </p>
+                    </div>
+                    <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                      <div>
+                        <p className="text-slate-500">Capital estimado</p>
+                        <p className="font-medium text-slate-900">{formatCurrency(item.principalAmount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Interés estimado</p>
+                        <p className="font-medium text-emerald-600">{formatCurrency(item.interestAmount)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              : projectedMonthlyProfit.map((item) => (
+                  <div key={item.key} className="rounded-xl border border-slate-200 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-slate-900">{item.label}</p>
+                        <p className="text-sm text-slate-500">Ganancia estimada del periodo</p>
+                      </div>
+                      <p className="font-semibold text-emerald-600">{formatCurrency(item.amount)}</p>
+                    </div>
+                  </div>
+                ))}
+          </div>
         </div>
       </div>
 

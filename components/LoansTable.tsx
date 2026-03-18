@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { formatCurrency, formatDate, loanInterest } from '@/lib/format'
+import { getLoanFrequencyLabel, getLoanInstallmentsCount } from '@/lib/loanSchedule'
 import type { Loan } from '@/types/database'
 import type { Client } from '@/types/database'
 
@@ -68,6 +69,13 @@ export default function LoansTable({ loans }: Props) {
                   <dt className="text-slate-500">Tasa</dt>
                   <dd className="font-medium text-slate-900">{Number(l.interest_rate)}%</dd>
                 </div>
+                <div>
+                  <dt className="text-slate-500">Modalidad</dt>
+                  <dd className="font-medium text-slate-900">
+                    {getLoanFrequencyLabel(l)}
+                    {l.payment_frequency === 'biweekly' ? ` (${getLoanInstallmentsCount(l)} cuotas)` : ''}
+                  </dd>
+                </div>
               </dl>
             </Link>
           )
@@ -82,6 +90,7 @@ export default function LoansTable({ loans }: Props) {
             <tr>
               <th className="px-4 py-3 font-medium text-slate-700">Cliente</th>
               <th className="px-4 py-3 font-medium text-slate-700">Monto</th>
+              <th className="px-4 py-3 font-medium text-slate-700">Modalidad</th>
               <th className="px-4 py-3 font-medium text-slate-700">%</th>
               <th className="px-4 py-3 font-medium text-slate-700">Total</th>
               <th className="px-4 py-3 font-medium text-slate-700">Interés</th>
@@ -102,6 +111,10 @@ export default function LoansTable({ loans }: Props) {
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(l.amount))}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {getLoanFrequencyLabel(l)}
+                    {l.payment_frequency === 'biweekly' ? ` (${getLoanInstallmentsCount(l)} cuotas)` : ''}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{Number(l.interest_rate)}%</td>
                   <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(l.total_amount))}</td>
                   <td className="px-4 py-3 text-emerald-600 font-medium">{formatCurrency(interest)}</td>

@@ -2,9 +2,16 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { normalizeLoanStatus } from '@/lib/loanStatus'
+import {
+  buildProjectedMonthlyProfitData,
+  getLoanFrequencyLabel,
+  getLoanInstallmentsCount,
+  type MonthlyProjection,
+} from '@/lib/loanSchedule'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
 import { formatCurrency, formatDate, loanInterest } from '@/lib/format'
 import MonthlyEarningsChart, { type MonthlyData } from '@/components/MonthlyEarningsChart'
+import StatusBanner from '@/components/StatusBanner'
 import type { Loan } from '@/types/database'
 import type { Payment } from '@/types/database'
 import type { Client } from '@/types/database'
@@ -50,7 +57,7 @@ export default function ReportsPage() {
   const paidLoans = normalizedLoans.filter((l) => l.status === 'paid').length
   const overdueLoans = normalizedLoans.filter((l) => l.status === 'overdue').length
 
-  const monthlyProfitData: MonthlyData[] = useMemo(() => {
+  const monthlyCollectedData: MonthlyData[] = useMemo(() => {
     const byMonth: Record<string, number> = {}
     payments.forEach((p) => {
       const key = getMonthKey(p.payment_date)
@@ -65,6 +72,18 @@ export default function ReportsPage() {
         return { month: label, amount, label }
       })
   }, [payments])
+  const projectedMonthlyData: MonthlyProjection[] = useMemo(
+    () => buildProjectedMonthlyProfitData(normalizedLoans),
+    [normalizedLoans]
+  )
+  const projectedTotal = useMemo(
+    () => projectedMonthlyData.reduce((sum, item) => sum + item.amount, 0),
+    [projectedMonthlyData]
+  )
+  const bestProjectedMonth = projectedMonthlyData.reduce<MonthlyData | null>(
+    (best, item) => (!best || item.amount > best.amount ? item : best),
+    null
+  )
 
   function handleExport() {
     const lines = [
@@ -75,6 +94,7 @@ export default function ReportsPage() {
       `Total prestado,${formatCurrency(totalLent)}`,
       `Total cobrado,${formatCurrency(totalCollected)}`,
       `Interés total (a ganar),${formatCurrency(totalInterestEarned)}`,
+      `Ganancia proyectada visible,${formatCurrency(projectedTotal)}`,
       `Préstamos activos,${activeLoans}`,
       `Préstamos pagados,${paidLoans}`,
       `Préstamos vencidos,${overdueLoans}`,
@@ -158,6 +178,16 @@ export default function ReportsPage() {
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div>
+                  <dt className="text-slate-500">Modalidad</dt>
+                  <dd className="font-medium text-slate-900">{getLoanFrequencyLabel(l)}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Cuotas</dt>
+                  <dd className="font-medium text-slate-900">
+                    {l.payment_frequency === 'biweekly' ? getLoanInstallmentsCount(l) : 'Fecha final'}
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-slate-500">Tasa</dt>
                   <dd className="font-medium text-slate-900">{Number(l.interest_rate)}%</dd>
                 </div>
@@ -180,6 +210,7 @@ export default function ReportsPage() {
                   <th className="px-4 py-3 font-medium text-slate-700">Inicio</th>
                   <th className="px-4 py-3 font-medium text-slate-700">Vencimiento</th>
                   <th className="px-4 py-3 font-medium text-slate-700">Monto</th>
+                  <th className="px-4 py-3 font-medium text-slate-700">Modalidad</th>
                   <th className="px-4 py-3 font-medium text-slate-700">%</th>
                   <th className="px-4 py-3 font-medium text-slate-700">Total</th>
                   <th className="px-4 py-3 font-medium text-slate-700">Interés (ganancia)</th>
@@ -192,6 +223,10 @@ export default function ReportsPage() {
                     <td className="px-4 py-3 text-slate-600">{formatDate(l.start_date)}</td>
                     <td className="px-4 py-3 text-slate-600">{formatDate(l.due_date)}</td>
                     <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(l.amount))}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {getLoanFrequencyLabel(l)}
+                      {l.payment_frequency === 'biweekly' ? ` (${getLoanInstallmentsCount(l)} cuotas)` : ''}
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{Number(l.interest_rate)}%</td>
                     <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(l.total_amount))}</td>
                     <td className="px-4 py-3 font-medium text-emerald-600">
@@ -206,9 +241,52 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="card p-4 sm:p-6">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900 sm:mb-6">Cobros mensuales</h2>
-        <MonthlyEarningsChart data={monthlyProfitData} />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="card p-4 sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900 sm:mb-6">Cobros mensuales reales</h2>
+          {monthlyCollectedData.length === 0 ? (
+            <StatusBanner
+              variant="info"
+              title="Aún no hay cobros para este gráfico"
+              message="Cuando registres pagos, aquí verás el comportamiento real mes a mes."
+            />
+          ) : (
+            <MonthlyEarningsChart data={monthlyCollectedData} valueLabel="Cobro real" />
+          )}
+        </div>
+
+        <div className="card p-4 sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Ganancia proyectada por mes</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Proyección distribuida según fecha final o cronograma de 3 quincenas.
+              </p>
+            </div>
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm">
+              <p className="text-emerald-700">Ganancia proyectada visible</p>
+              <p className="mt-1 font-semibold text-emerald-900">{formatCurrency(projectedTotal)}</p>
+              {bestProjectedMonth && (
+                <p className="mt-1 text-xs text-emerald-700">
+                  Mejor mes: {bestProjectedMonth.label} con {formatCurrency(bestProjectedMonth.amount)}
+                </p>
+              )}
+            </div>
+          </div>
+          {projectedMonthlyData.length === 0 ? (
+            <StatusBanner
+              variant="info"
+              title="No hay proyección disponible"
+              message="Necesitas préstamos con montos y fechas definidas para estimar ganancias futuras."
+            />
+          ) : (
+            <MonthlyEarningsChart
+              data={projectedMonthlyData}
+              valueLabel="Ganancia proyectada"
+              barColor="#16a34a"
+            />
+          )}
+        </div>
       </div>
     </div>
   )

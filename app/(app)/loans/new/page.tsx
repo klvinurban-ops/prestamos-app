@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
 import LoanForm from '@/components/LoanForm'
-import type { Client } from '@/types/database'
+import type { Client, LoanInsert } from '@/types/database'
 
 export default function NewLoanPage() {
   const router = useRouter()
@@ -20,16 +20,7 @@ export default function NewLoanPage() {
     load()
   }, [])
 
-  async function handleSubmit(data: {
-    client_id: string
-    amount: number
-    interest_rate: number
-    total_amount: number
-    remaining_balance: number
-    start_date: string
-    due_date: string
-    status: 'active' | 'paid' | 'overdue'
-  }) {
+  async function handleSubmit(data: LoanInsert) {
     const supabase = getSupabaseBrowser()
     const { error } = await supabase.from('loans').insert(data as never)
     if (error) throw new Error(error.message)

@@ -1,20 +1,19 @@
 /**
- * Formato de moneda: COP (peso colombiano) - símbolo $
- * Para usar otra moneda, cambia CURRENCY y LOCALE aquí.
+ * Formato de moneda comercial con separador de miles.
+ * Resultado esperado: $1.000.000
  */
-const CURRENCY = 'COP'
 const LOCALE = 'es-CO'
 
 export function formatCurrency(
   value: number,
   options?: { minimumFractionDigits?: number; maximumFractionDigits?: number }
 ): string {
-  return new Intl.NumberFormat(LOCALE, {
-    style: 'currency',
-    currency: CURRENCY,
+  const formatted = new Intl.NumberFormat(LOCALE, {
     minimumFractionDigits: options?.minimumFractionDigits ?? 0,
     maximumFractionDigits: options?.maximumFractionDigits ?? 0,
-  }).format(value)
+  }).format(Math.abs(value))
+
+  return `${value < 0 ? '-' : ''}$${formatted}`
 }
 
 export function formatDate(dateStr: string): string {

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { normalizeLoanStatus } from '@/lib/loanStatus'
+import { buildProjectedMonthlyProfitData, type MonthlyProjection } from '@/lib/loanSchedule'
 import { getSupabaseBrowser } from '@/lib/supabaseClient'
 import { formatCurrency } from '@/lib/format'
 import { DashboardCard } from '@/components/DashboardCards'
@@ -79,6 +80,7 @@ export default function DashboardPage() {
   }, [payments])
   const portfolioStatus = overdueLoans > 0 ? 'Requiere atención' : activeLoans > 0 ? 'Saludable' : 'Sin movimiento'
   const hasPortfolioData = normalizedLoans.length > 0 || payments.length > 0
+  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
 
   const monthlyData: MonthlyData[] = useMemo(() => {
     const byMonth: Record<string, number> = {}
@@ -104,6 +106,15 @@ export default function DashboardPage() {
         return { month: label, amount, label }
       })
   }, [payments])
+  const projectedMonthlyData: MonthlyProjection[] = useMemo(
+    () => buildProjectedMonthlyProfitData(normalizedLoans),
+    [normalizedLoans]
+  )
+  const currentMonthProjection = projectedMonthlyData.find((item) => item.key === currentMonthKey)?.amount ?? 0
+  const nextProjectedMonth = projectedMonthlyData.find((item) => item.key >= currentMonthKey && item.amount > 0)
+  const projectedAverage = projectedMonthlyData.length
+    ? projectedMonthlyData.reduce((sum, item) => sum + item.amount, 0) / projectedMonthlyData.length
+    : 0
 
   if (loading) {
     return (
@@ -155,6 +166,13 @@ export default function DashboardPage() {
           <p className="summary-label">Actualizado</p>
           <p className="summary-value text-lg sm:text-xl">{new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</p>
           <p className="mt-1 text-xs text-slate-500">Datos cargados desde Supabase en esta sesión.</p>
+        </div>
+        <div className="summary-tile">
+          <p className="summary-label">Proyección del mes</p>
+          <p className="summary-value">{formatCurrency(currentMonthProjection)}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Ganancia estimada para {new Date().toLocaleDateString('es-CO', { month: 'long' })}.
+          </p>
         </div>
       </div>
 
@@ -228,6 +246,39 @@ export default function DashboardPage() {
           />
         ) : (
           <MonthlyEarningsChart data={monthlyData} />
+        )}
+      </div>
+
+      <div className="card mt-6 p-4 sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Ganancia proyectada por mes</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Se calcula a partir del calendario estimado de cada préstamo activo o pendiente.
+            </p>
+          </div>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm">
+            <p className="text-emerald-700">Promedio mensual proyectado</p>
+            <p className="mt-1 font-semibold text-emerald-900">{formatCurrency(projectedAverage)}</p>
+            {nextProjectedMonth && (
+              <p className="mt-1 text-xs text-emerald-700">
+                Próximo pico: {nextProjectedMonth.label} por {formatCurrency(nextProjectedMonth.amount)}
+              </p>
+            )}
+          </div>
+        </div>
+        {projectedMonthlyData.length === 0 ? (
+          <StatusBanner
+            variant="info"
+            title="No hay proyección disponible todavía"
+            message="Crea préstamos con fecha de inicio y vencimiento para estimar la ganancia mensual futura."
+          />
+        ) : (
+          <MonthlyEarningsChart
+            data={projectedMonthlyData}
+            valueLabel="Ganancia proyectada"
+            barColor="#16a34a"
+          />
         )}
       </div>
     </div>

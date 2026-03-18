@@ -16,9 +16,15 @@ export type MonthlyData = { month: string; amount: number; label: string }
 
 type Props = {
   data: MonthlyData[]
+  valueLabel?: string
+  barColor?: string
 }
 
-export default function MonthlyEarningsChart({ data }: Props) {
+export default function MonthlyEarningsChart({
+  data,
+  valueLabel = 'Cobrado',
+  barColor = '#0f766e',
+}: Props) {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -43,17 +49,17 @@ export default function MonthlyEarningsChart({ data }: Props) {
             interval={isMobile ? 1 : 0}
           />
           <YAxis
-            tickFormatter={(v) => (isMobile ? formatCurrency(v).replace('COP', '').trim() : formatCurrency(v))}
+            tickFormatter={(v) => formatCurrency(v)}
             tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }}
             tickLine={false}
             width={isMobile ? 44 : 60}
           />
           <Tooltip
-            formatter={(value: number) => [formatCurrency(value), 'Cobrado']}
+            formatter={(value: number) => [formatCurrency(value), valueLabel]}
             labelFormatter={(_, payload) => payload[0]?.payload?.label ?? ''}
             contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
           />
-          <Bar dataKey="amount" fill="#0f766e" radius={[4, 4, 0, 0]} name="Cobrado" />
+          <Bar dataKey="amount" fill={barColor} radius={[4, 4, 0, 0]} name={valueLabel} />
         </BarChart>
       </ResponsiveContainer>
     </div>

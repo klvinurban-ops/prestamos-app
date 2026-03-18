@@ -25,9 +25,17 @@ create table if not exists public.loans (
   remaining_balance decimal(12, 2) not null,
   start_date date not null,
   due_date date not null,
+  payment_frequency text not null default 'monthly',
+  installments_count integer not null default 1,
   status text not null default 'active' check (status in ('active', 'paid', 'overdue')),
   created_at timestamptz default now()
 );
+
+alter table public.loans
+  add column if not exists payment_frequency text not null default 'monthly';
+
+alter table public.loans
+  add column if not exists installments_count integer not null default 1;
 
 -- Payments table
 create table if not exists public.payments (
