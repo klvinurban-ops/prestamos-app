@@ -28,8 +28,7 @@ export default function EditClientPage() {
     const supabase = getSupabaseBrowser()
     const { id: _id, ...rest } = data
     const payload: ClientUpdate = { name: rest.name, phone: rest.phone ?? null, document: rest.document ?? null, address: rest.address ?? null, notes: rest.notes ?? null }
-    // @ts-expect-error - Supabase client update() infers never with current typings
-    const { error } = await supabase.from('clients').update(payload).eq('id', id)
+    const { error } = await supabase.from('clients').update(payload as never).eq('id', id)
     if (error) throw new Error(error.message)
     router.push(`/clients/${id}`)
     router.refresh()

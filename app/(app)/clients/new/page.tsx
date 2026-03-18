@@ -11,8 +11,7 @@ export default function NewClientPage() {
 
   async function handleSubmit(data: ClientInsert) {
     const supabase = getSupabaseBrowser()
-    // @ts-expect-error - Supabase client insert() infers never with current typings
-    const { error } = await supabase.from('clients').insert(data)
+    const { error } = await supabase.from('clients').insert(data as never)
     if (error) throw new Error(error.message)
     router.push('/clients')
     router.refresh()

@@ -31,8 +31,7 @@ export default function NewLoanPage() {
     status: 'active' | 'paid' | 'overdue'
   }) {
     const supabase = getSupabaseBrowser()
-    // @ts-expect-error - Supabase client insert() infers never with current typings
-    const { error } = await supabase.from('loans').insert(data)
+    const { error } = await supabase.from('loans').insert(data as never)
     if (error) throw new Error(error.message)
     router.push('/loans')
     router.refresh()

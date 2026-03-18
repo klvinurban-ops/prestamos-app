@@ -45,23 +45,21 @@ export async function POST(request: Request) {
       remaining_balance: newBalance,
     })
 
-    // @ts-expect-error - Supabase client insert infers never with current typings
     const { error: insertError } = await supabase.from('payments').insert({
       loan_id,
       amount,
       payment_date,
       notes: notes ?? null,
-    })
+    } as never)
 
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
-    // @ts-expect-error - Supabase client update infers never with current typings
     const { error: updateError } = await supabase.from('loans').update({
       remaining_balance: newBalance,
       status,
-    }).eq('id', loan_id)
+    } as never).eq('id', loan_id)
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
