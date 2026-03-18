@@ -38,24 +38,24 @@ export default function LoanDetailPage() {
     load()
   }, [id])
 
-  if (loading) return <div className="p-8">Cargando...</div>
-  if (!loan) return <div className="p-8">Préstamo no encontrado.</div>
+  if (loading) return <div className="page-shell">Cargando...</div>
+  if (!loan) return <div className="page-shell">Préstamo no encontrado.</div>
 
   const currentLoan = normalizeLoanStatus(loan)
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex flex-wrap items-center gap-4">
+    <div className="page-shell">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
         <Link href="/loans" className="text-slate-500 hover:text-slate-700">
           ← Préstamos
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="page-title">
           Préstamo — {currentLoan.clients?.name ?? 'Cliente'}
         </h1>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Resumen</h2>
           <dl className="space-y-3">
             <div>
@@ -112,7 +112,7 @@ export default function LoanDetailPage() {
             </div>
           </dl>
           {currentLoan.status !== 'paid' && Number(currentLoan.remaining_balance) > 0 && (
-            <Link href="/payments" className="mt-4 inline-block btn-primary">
+            <Link href="/payments" className="btn-primary mt-4 inline-flex w-full sm:w-auto">
               Registrar pago
             </Link>
           )}
@@ -122,30 +122,48 @@ export default function LoanDetailPage() {
       <div className="mt-8">
         <h2 className="mb-4 text-lg font-semibold text-slate-900">Historial de pagos</h2>
         {payments.length === 0 ? (
-          <div className="card p-8 text-center text-slate-500">Aún no hay pagos.</div>
+          <div className="empty-state">Aún no hay pagos.</div>
         ) : (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 font-medium text-slate-700">Fecha</th>
-                    <th className="px-4 py-3 font-medium text-slate-700">Monto</th>
-                    <th className="px-4 py-3 font-medium text-slate-700">Notas</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {payments.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 text-slate-600">{formatDate(p.payment_date)}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{formatCurrency(Number(p.amount))}</td>
-                      <td className="px-4 py-3 text-slate-500">{p.notes || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <>
+            <div className="space-y-3 md:hidden">
+              {payments.map((p) => (
+                <div key={p.id} className="card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{formatCurrency(Number(p.amount))}</p>
+                      <p className="text-sm text-slate-500">{formatDate(p.payment_date)}</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-500">{p.notes || 'Sin notas'}</p>
+                </div>
+              ))}
             </div>
-          </div>
+
+            <div className="hidden md:block">
+              <div className="card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 font-medium text-slate-700">Fecha</th>
+                        <th className="px-4 py-3 font-medium text-slate-700">Monto</th>
+                        <th className="px-4 py-3 font-medium text-slate-700">Notas</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {payments.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 text-slate-600">{formatDate(p.payment_date)}</td>
+                          <td className="px-4 py-3 font-medium text-slate-900">{formatCurrency(Number(p.amount))}</td>
+                          <td className="px-4 py-3 text-slate-500">{p.notes || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

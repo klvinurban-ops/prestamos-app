@@ -42,7 +42,7 @@ export default function ClientForm({ client, onSubmit, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
       {error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
       )}
@@ -102,12 +102,12 @@ export default function ClientForm({ client, onSubmit, onCancel }: Props) {
           rows={3}
         />
       </div>
-      <div className="flex gap-3 pt-2">
-        <button type="submit" className="btn-primary" disabled={saving}>
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+        <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
           {saving ? 'Guardando...' : client ? 'Actualizar cliente' : 'Crear cliente'}
         </button>
         {onCancel && (
-          <button type="button" className="btn-secondary" onClick={onCancel}>
+          <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onCancel}>
             Cancelar
           </button>
         )}

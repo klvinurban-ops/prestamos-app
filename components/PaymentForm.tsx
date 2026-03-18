@@ -84,7 +84,7 @@ export default function PaymentForm({ loans, onSuccess }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card max-w-xl space-y-4 p-6">
+    <form onSubmit={handleSubmit} className="card max-w-2xl space-y-4 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-slate-900">Registrar pago</h2>
       {error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
@@ -111,7 +111,7 @@ export default function PaymentForm({ loans, onSuccess }: Props) {
           Saldo restante: <strong>{formatCurrency(maxPayment)}</strong>
         </p>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="amount">Monto *</label>
           <input
@@ -150,7 +150,7 @@ export default function PaymentForm({ loans, onSuccess }: Props) {
           placeholder="Opcional"
         />
       </div>
-      <button type="submit" className="btn-primary" disabled={saving}>
+      <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
         {saving ? 'Guardando...' : 'Registrar pago'}
       </button>
     </form>

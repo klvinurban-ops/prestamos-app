@@ -17,14 +17,14 @@ const variantStyles = {
 
 export function DashboardCard({ title, value, subtitle, icon, variant = 'default' }: CardProps) {
   return (
-    <div className={`card p-6 ${variantStyles[variant]}`}>
+    <div className={`card p-4 sm:p-6 ${variantStyles[variant]}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
+          <p className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">{value}</p>
           {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
         </div>
-        <span className="text-3xl" aria-hidden>{icon}</span>
+        <span className="text-2xl sm:text-3xl" aria-hidden>{icon}</span>
       </div>
     </div>
   )

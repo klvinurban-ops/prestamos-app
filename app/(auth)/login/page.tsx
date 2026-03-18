@@ -44,9 +44,9 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
-        <div className="mb-8 text-center">
-          <Link href="/" className="text-2xl font-bold text-teal-700">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
+        <div className="mb-6 text-center sm:mb-8">
+          <Link href="/" className="text-xl font-bold text-teal-700 sm:text-2xl">
             PrestamosPro
           </Link>
           <p className="mt-2 text-sm text-slate-500">

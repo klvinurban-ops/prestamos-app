@@ -42,17 +42,17 @@ export default function LoansPage() {
   }, [loans, statusFilter])
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Préstamos</h1>
-        <Link href="/loans/new" className="btn-primary w-fit">
+    <div className="page-shell">
+      <div className="page-header">
+        <h1 className="page-title">Préstamos</h1>
+        <Link href="/loans/new" className="btn-primary w-full sm:w-fit">
           Nuevo préstamo
         </Link>
       </div>
-      <div className="mb-4 flex flex-wrap items-center gap-4">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
         <label className="text-sm font-medium text-slate-700">Estado:</label>
         <select
-          className="input w-auto min-w-[140px]"
+          className="input w-full min-w-[140px] sm:w-auto"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -64,7 +64,7 @@ export default function LoansPage() {
         </select>
       </div>
       {loading ? (
-        <div className="card p-8 text-center text-slate-500">Cargando...</div>
+        <div className="empty-state">Cargando...</div>
       ) : (
         <LoansTable loans={filtered} />
       )}

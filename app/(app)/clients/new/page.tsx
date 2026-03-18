@@ -18,12 +18,12 @@ export default function NewClientPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center gap-4">
+    <div className="page-shell">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/clients" className="text-slate-500 hover:text-slate-700">
           ← Clientes
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Nuevo cliente</h1>
+        <h1 className="page-title">Nuevo cliente</h1>
       </div>
       <ClientForm onSubmit={handleSubmit} onCancel={() => router.push('/clients')} />
     </div>

@@ -34,10 +34,10 @@ export default function ClientsPage() {
   }, [clients, search])
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
-        <Link href="/clients/new" className="btn-primary w-fit">
+    <div className="page-shell">
+      <div className="page-header">
+        <h1 className="page-title">Clientes</h1>
+        <Link href="/clients/new" className="btn-primary w-full sm:w-fit">
           Nuevo cliente
         </Link>
       </div>
@@ -45,13 +45,13 @@ export default function ClientsPage() {
         <input
           type="search"
           placeholder="Buscar por nombre, teléfono, documento o dirección..."
-          className="input max-w-md"
+          className="input w-full sm:max-w-md"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
       {loading ? (
-        <div className="card p-8 text-center text-slate-500">Cargando...</div>
+        <div className="empty-state">Cargando...</div>
       ) : (
         <ClientsTable
           clients={filtered}

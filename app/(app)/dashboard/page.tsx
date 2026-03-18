@@ -73,7 +73,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="page-shell">
         <div className="animate-pulse space-y-6">
           <div className="h-8 w-48 rounded bg-slate-200" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -87,8 +87,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="mb-8 text-2xl font-bold text-slate-900">Dashboard</h1>
+    <div className="page-shell">
+      <h1 className="mb-6 page-title sm:mb-8">Dashboard</h1>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <DashboardCard
           title="Total prestado"
@@ -120,8 +120,8 @@ export default function DashboardPage() {
           variant={overdueLoans > 0 ? 'danger' : 'default'}
         />
       </div>
-      <div className="mt-10 card p-6">
-        <h2 className="mb-6 text-lg font-semibold text-slate-900">Cobros por mes</h2>
+      <div className="card mt-8 p-4 sm:mt-10 sm:p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900 sm:mb-6">Cobros por mes</h2>
         <MonthlyEarningsChart data={monthlyData} />
       </div>
     </div>

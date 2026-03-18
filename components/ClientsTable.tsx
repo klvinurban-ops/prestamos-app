@@ -30,15 +30,46 @@ export default function ClientsTable({ clients, onDeleted }: Props) {
 
   if (clients.length === 0) {
     return (
-      <div className="card p-8 text-center text-slate-500">
+      <div className="empty-state">
         No hay clientes. <Link href="/clients/new" className="text-teal-600 hover:underline">Crear el primero</Link>
       </div>
     )
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="overflow-x-auto">
+    <>
+      <div className="space-y-3 md:hidden">
+        {clients.map((c) => (
+          <div key={c.id} className="card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link href={`/clients/${c.id}`} className="block truncate text-base font-semibold text-teal-600 hover:underline">
+                  {c.name}
+                </Link>
+                <p className="mt-1 text-sm text-slate-500">{c.phone || 'Sin teléfono'}</p>
+                <p className="text-sm text-slate-500">{c.document || 'Sin documento'}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Link href={`/clients/${c.id}/edit`} className="btn-secondary w-full sm:w-auto">
+                Editar
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleDelete(c.id, c.name)}
+                disabled={deletingId === c.id}
+                className="btn w-full border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 sm:w-auto"
+              >
+                {deletingId === c.id ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block">
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
@@ -75,7 +106,9 @@ export default function ClientsTable({ clients, onDeleted }: Props) {
             ))}
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

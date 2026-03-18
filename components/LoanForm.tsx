@@ -86,7 +86,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
       {error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
       )}
@@ -106,7 +106,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
           ))}
         </select>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="amount">Monto del préstamo *</label>
           <input
@@ -136,7 +136,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
           />
         </div>
       </div>
-      <div className="rounded-lg bg-slate-50 p-4 space-y-1">
+      <div className="space-y-1 rounded-lg bg-slate-50 p-4">
         <p className="text-sm text-slate-600">Total a cobrar (calculado)</p>
         <p className="text-xl font-bold text-slate-900">{formatCurrency(totalAmount)}</p>
         <p className="text-xs text-slate-500">
@@ -146,7 +146,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
       {!loan && (
         <div>
           <label className="label" htmlFor="amount_paid">
-            Monto ya cobrado (opcional) — para préstamos en curso
+            Monto ya cobrado (opcional)
           </label>
           <input
             id="amount_paid"
@@ -164,7 +164,7 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
           </p>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="start_date">Fecha de inicio *</label>
           <input
@@ -194,12 +194,12 @@ export default function LoanForm({ clients, loan, onSubmit, onCancel }: Props) {
           <p className="text-xl font-bold text-slate-900">{formatCurrency(remainingBalance)}</p>
         </div>
       )}
-      <div className="flex gap-3 pt-2">
-        <button type="submit" className="btn-primary" disabled={saving}>
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+        <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
           {saving ? 'Guardando...' : loan ? 'Actualizar préstamo' : 'Crear préstamo'}
         </button>
         {onCancel && (
-          <button type="button" className="btn-secondary" onClick={onCancel}>
+          <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onCancel}>
             Cancelar
           </button>
         )}

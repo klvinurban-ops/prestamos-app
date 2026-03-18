@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -18,20 +19,34 @@ type Props = {
 }
 
 export default function MonthlyEarningsChart({ data }: Props) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    function updateViewport() {
+      setIsMobile(window.innerWidth < 640)
+    }
+
+    updateViewport()
+    window.addEventListener('resize', updateViewport)
+    return () => window.removeEventListener('resize', updateViewport)
+  }, [])
+
   return (
-    <div className="h-72 w-full">
+    <div className="h-56 w-full sm:h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 10, right: 8, left: isMobile ? -24 : 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }}
             tickLine={false}
+            interval={isMobile ? 1 : 0}
           />
           <YAxis
-            tickFormatter={(v) => formatCurrency(v)}
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tickFormatter={(v) => (isMobile ? formatCurrency(v).replace('COP', '').trim() : formatCurrency(v))}
+            tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }}
             tickLine={false}
+            width={isMobile ? 44 : 60}
           />
           <Tooltip
             formatter={(value: number) => [formatCurrency(value), 'Cobrado']}

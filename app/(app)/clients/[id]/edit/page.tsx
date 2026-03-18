@@ -34,16 +34,16 @@ export default function EditClientPage() {
     router.refresh()
   }
 
-  if (loading) return <div className="p-8">Cargando...</div>
-  if (!client) return <div className="p-8">Cliente no encontrado.</div>
+  if (loading) return <div className="page-shell">Cargando...</div>
+  if (!client) return <div className="page-shell">Cliente no encontrado.</div>
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center gap-4">
+    <div className="page-shell">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href={`/clients/${id}`} className="text-slate-500 hover:text-slate-700">
           ← Perfil
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Editar cliente</h1>
+        <h1 className="page-title">Editar cliente</h1>
       </div>
       <ClientForm
         client={client}
