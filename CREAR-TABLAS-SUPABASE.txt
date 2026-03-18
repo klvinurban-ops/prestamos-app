@@ -1,0 +1,34 @@
+===============================================
+  CREAR LAS TABLAS EN SUPABASE (una sola vez)
+===============================================
+
+El error "Could not find the table 'public.clients'" significa que
+aún no has creado las tablas en tu proyecto Supabase. Hazlo así:
+
+PASO 1 - Abre Supabase
+  https://app.supabase.com  → entra a tu proyecto (jfddgzmccukcnmelrwei)
+
+PASO 2 - Abre el SQL Editor
+  En el menú de la izquierda, clic en "SQL Editor" (ícono </>)
+
+PASO 3 - Nueva consulta
+  Clic en "New query" (o "Nueva consulta")
+
+PASO 4 - Pega el SQL
+  1. Abre en tu PC el archivo:  supabase/schema.sql
+  2. Selecciona TODO el contenido (Ctrl+A)
+  3. Copia (Ctrl+C)
+  4. Vuelve a Supabase, en el cuadro de texto pega todo (Ctrl+V)
+
+PASO 5 - Ejecutar
+  Clic en el botón "Run" (abajo a la derecha) o Ctrl+Enter
+
+PASO 6 - Verificar
+  Debe decir "Success" o "Success. No rows returned".
+  Eso crea las tablas: clients, loans, payments.
+
+PASO 7 - Volver a la app
+  Recarga la página en http://localhost:3000/clients/new (F5)
+  y vuelve a intentar "Crear cliente".
+
+===============================================

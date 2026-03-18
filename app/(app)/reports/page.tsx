@@ -1,0 +1,185 @@
+'use client'
+
+import { useEffect, useState, useMemo } from 'react'
+import { normalizeLoanStatus } from '@/lib/loanStatus'
+import { getSupabaseBrowser } from '@/lib/supabaseClient'
+import { formatCurrency, formatDate, loanInterest } from '@/lib/format'
+import MonthlyEarningsChart, { type MonthlyData } from '@/components/MonthlyEarningsChart'
+import type { Loan } from '@/types/database'
+import type { Payment } from '@/types/database'
+import type { Client } from '@/types/database'
+
+const MONTHS_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+function getMonthKey(dateStr: string) {
+  const d = new Date(dateStr)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+export default function ReportsPage() {
+  const [loans, setLoans] = useState<Loan[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [clients, setClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = getSupabaseBrowser()
+      const [loansRes, paymentsRes, clientsRes] = await Promise.all([
+        supabase.from('loans').select('*'),
+        supabase.from('payments').select('*'),
+        supabase.from('clients').select('id'),
+      ])
+      setLoans((loansRes.data ?? []) as Loan[])
+      setPayments((paymentsRes.data ?? []) as Payment[])
+      setClients((clientsRes.data ?? []) as Client[])
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const totalLent = useMemo(() => loans.reduce((s, l) => s + Number(l.amount), 0), [loans])
+  const totalCollected = useMemo(() => payments.reduce((s, p) => s + Number(p.amount), 0), [payments])
+  const totalInterestEarned = useMemo(() => {
+    const totalToCollect = loans.reduce((s, l) => s + Number(l.total_amount), 0)
+    const totalPrincipal = loans.reduce((s, l) => s + Number(l.amount), 0)
+    return totalToCollect - totalPrincipal
+  }, [loans])
+  const normalizedLoans = useMemo(() => loans.map((loan) => normalizeLoanStatus(loan)), [loans])
+  const activeLoans = normalizedLoans.filter((l) => l.status === 'active').length
+  const paidLoans = normalizedLoans.filter((l) => l.status === 'paid').length
+  const overdueLoans = normalizedLoans.filter((l) => l.status === 'overdue').length
+
+  const monthlyProfitData: MonthlyData[] = useMemo(() => {
+    const byMonth: Record<string, number> = {}
+    payments.forEach((p) => {
+      const key = getMonthKey(p.payment_date)
+      byMonth[key] = (byMonth[key] ?? 0) + Number(p.amount)
+    })
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-12)
+      .map(([month, amount]) => {
+        const [y, m] = month.split('-')
+        const label = `${MONTHS_ES[parseInt(m, 10) - 1]} ${y}`
+        return { month: label, amount, label }
+      })
+  }, [payments])
+
+  function handleExport() {
+    const lines = [
+      'PrestamosPro - Reporte',
+      `Generado: ${new Date().toLocaleString('es')}`,
+      '',
+      'Resumen',
+      `Total prestado,${formatCurrency(totalLent)}`,
+      `Total cobrado,${formatCurrency(totalCollected)}`,
+      `Interés total (a ganar),${formatCurrency(totalInterestEarned)}`,
+      `Préstamos activos,${activeLoans}`,
+      `Préstamos pagados,${paidLoans}`,
+      `Préstamos vencidos,${overdueLoans}`,
+      `Clientes,${clients.length}`,
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `prestamospro-reporte-${new Date().toISOString().slice(0, 10)}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  if (loading) {
+    return <div className="p-8">Cargando...</div>
+  }
+
+  return (
+    <div className="p-8">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900">Reportes</h1>
+        <button type="button" onClick={handleExport} className="btn-primary">
+          Exportar reporte
+        </button>
+      </div>
+
+      <div className="card mb-8 p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Resumen general</h2>
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <dt className="text-sm text-slate-500">Total prestado</dt>
+            <dd className="text-xl font-bold text-slate-900">{formatCurrency(totalLent)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Total cobrado</dt>
+            <dd className="text-xl font-bold text-slate-900">{formatCurrency(totalCollected)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Interés total (a ganar)</dt>
+            <dd className="text-xl font-bold text-slate-900">{formatCurrency(totalInterestEarned)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Clientes</dt>
+            <dd className="text-xl font-bold text-slate-900">{clients.length}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="card mb-8 p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Rendimiento de préstamos</h2>
+        <dl className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <dt className="text-sm text-slate-500">Activos</dt>
+            <dd className="text-2xl font-bold text-emerald-600">{activeLoans}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Pagados</dt>
+            <dd className="text-2xl font-bold text-slate-700">{paidLoans}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Vencidos</dt>
+            <dd className="text-2xl font-bold text-red-600">{overdueLoans}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="card mb-8 p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Ganancias por préstamo (fecha, monto, %, interés)</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th className="px-4 py-3 font-medium text-slate-700">Inicio</th>
+                <th className="px-4 py-3 font-medium text-slate-700">Vencimiento</th>
+                <th className="px-4 py-3 font-medium text-slate-700">Monto</th>
+                <th className="px-4 py-3 font-medium text-slate-700">%</th>
+                <th className="px-4 py-3 font-medium text-slate-700">Total</th>
+                <th className="px-4 py-3 font-medium text-slate-700">Interés (ganancia)</th>
+                <th className="px-4 py-3 font-medium text-slate-700">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {normalizedLoans.map((l) => (
+                <tr key={l.id} className="hover:bg-slate-50/50">
+                  <td className="px-4 py-3 text-slate-600">{formatDate(l.start_date)}</td>
+                  <td className="px-4 py-3 text-slate-600">{formatDate(l.due_date)}</td>
+                  <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(l.amount))}</td>
+                  <td className="px-4 py-3 text-slate-600">{Number(l.interest_rate)}%</td>
+                  <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(l.total_amount))}</td>
+                  <td className="px-4 py-3 font-medium text-emerald-600">
+                    {formatCurrency(loanInterest(Number(l.total_amount), Number(l.amount)))}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{l.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card p-6">
+        <h2 className="mb-6 text-lg font-semibold text-slate-900">Cobros mensuales</h2>
+        <MonthlyEarningsChart data={monthlyProfitData} />
+      </div>
+    </div>
+  )
+}

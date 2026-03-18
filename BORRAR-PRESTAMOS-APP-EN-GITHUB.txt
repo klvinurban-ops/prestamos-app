@@ -1,0 +1,19 @@
+Si el error en Vercel sigue saliendo, es porque en GitHub todavía existe la carpeta "prestamos-app".
+
+BORRARLA EN GITHUB (paso a paso):
+
+1. Entra a tu repo: github.com/klvinurban-ops/prestamos-app
+
+2. Haz clic en la carpeta "prestamos-app" (si la ves en la lista de archivos).
+
+3. Dentro de esa carpeta, arriba a la derecha verás "..." (tres puntos). Clic ahí.
+
+4. Elige "Delete directory" o "Eliminar directorio".
+
+5. En el mensaje de commit escribe: "Eliminar carpeta vieja que causaba error de build"
+
+6. Clic en "Commit changes".
+
+7. Vuelve a Vercel → Deployments → Redeploy (o espera el deploy automático).
+
+Así Vercel solo construirá la app correcta (la que está en la raíz con package.json de Next 14).

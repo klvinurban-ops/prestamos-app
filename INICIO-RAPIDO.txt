@@ -1,0 +1,61 @@
+===============================================
+  PRESTAMOSPRO - CÓMO ABRIR LA APP (PASO A PASO)
+===============================================
+
+PASO 1 - Instalar (solo la primera vez)
+---------------------------------------
+  1. Abre CMD o PowerShell.
+  2. Escribe:
+       cd C:\Users\ug94c\Downloads\app-prestamos
+     y pulsa Enter.
+  3. Escribe:
+       npm install
+     y pulsa Enter. Espera a que termine (puede tardar 1-2 minutos).
+
+
+PASO 2 - Arrancar el servidor
+---------------------------------------
+  OPCIÓN A (recomendada):
+    - Haz DOBLE CLIC en:  run-dev.cmd
+    - Se abrirá una ventana negra. ESPERA.
+    - Cuando veas en la ventana la línea:
+        Ready in X.Xs
+      y algo como:
+        Local: http://localhost:3000
+    - NO CIERRES ESA VENTANA.
+
+  OPCIÓN B (desde CMD):
+    - Abre CMD, escribe:
+        cd C:\Users\ug94c\Downloads\app-prestamos
+        set NODE_OPTIONS=--max-old-space-size=4096
+        npm run dev
+    - Espera a ver "Ready" y la URL. No cierres la ventana.
+
+
+PASO 3 - Abrir la app en el navegador
+---------------------------------------
+  - Abre Chrome, Edge o Firefox.
+  - En la barra de direcciones escribe exactamente:
+      http://localhost:3000
+    y pulsa Enter.
+
+  Si no carga, prueba con:
+      http://localhost:3001
+
+  Deberías ver la pantalla de "Iniciar sesión" de PrestamosPro.
+
+
+PASO 4 - Si tienes .env.local configurado
+---------------------------------------
+  Inicia sesión con el email y contraseña que creaste en Supabase
+  (Authentication → Users). Si no has configurado Supabase, sigue
+  el archivo SETUP-SUPABASE.md.
+
+
+RESUMEN
+---------------------------------------
+  1. Doble clic en run-dev.cmd
+  2. Esperar a ver "Ready" (no cerrar la ventana)
+  3. Abrir navegador en http://localhost:3000
+
+===============================================

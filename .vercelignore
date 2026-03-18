@@ -1,0 +1,4 @@
+# Evitar que Vercel use carpetas que no son la app
+prestamos-app/
+.next/
+node_modules/
