@@ -70,6 +70,10 @@ function getMonthsBetween(startDate: string, dueDate: string) {
   return months.length > 0 ? months : [getMonthKey(startDate)]
 }
 
+function getMonthlyRecurringProfit(loan: LoanLike) {
+  return Math.round(Number(loan.amount) * (Number(loan.interest_rate ?? 0) / 100) * 100) / 100
+}
+
 function splitAmount(total: number, parts: number) {
   if (parts <= 0) return []
 
@@ -87,6 +91,15 @@ export function getLoanPaymentFrequency(loan: Partial<LoanLike>): PaymentFrequen
 export function getLoanInstallmentsCount(loan: Partial<LoanLike>) {
   const frequency = getLoanPaymentFrequency(loan)
   const configured = Number(loan.installments_count)
+
+  if (frequency === 'monthly') {
+    const startDate = typeof loan.start_date === 'string' ? loan.start_date : null
+    const dueDate = typeof loan.due_date === 'string' ? loan.due_date : null
+
+    if (startDate && dueDate) {
+      return getMonthsBetween(startDate, dueDate).length
+    }
+  }
 
   if (Number.isFinite(configured) && configured > 0) {
     return Math.round(configured)
@@ -134,6 +147,22 @@ export function getLoanSchedule(loan: LoanLike): InstallmentScheduleItem[] {
 export function getLoanProjectedMonthlyProfit(loan: LoanLike): MonthlyProjection[] {
   const frequency = getLoanPaymentFrequency(loan)
   const totalProfit = loanInterest(Number(loan.total_amount), Number(loan.amount))
+
+  if (frequency === 'monthly') {
+    const monthlyProfit = getMonthlyRecurringProfit(loan)
+    const months = getMonthsBetween(loan.start_date, loan.due_date)
+
+    if (monthlyProfit <= 0) {
+      return []
+    }
+
+    return months.map((key) => ({
+      key,
+      month: getMonthLabel(key),
+      label: getMonthLabel(key),
+      amount: monthlyProfit,
+    }))
+  }
 
   if (totalProfit <= 0) {
     return []

@@ -260,7 +260,7 @@ export default function ReportsPage() {
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Ganancia proyectada por mes</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Proyección distribuida según fecha final o cronograma de 3 quincenas.
+                En préstamos mensuales, la ganancia se proyecta por cada mes del plazo; en 3 quincenas, por cada cuota.
               </p>
             </div>
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm">

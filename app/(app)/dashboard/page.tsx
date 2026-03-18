@@ -62,16 +62,21 @@ export default function DashboardPage() {
   const totalInterest = totalToCollect - totalLent
   const activeLoans = normalizedLoans.filter((l) => l.status === 'active').length
   const overdueLoans = normalizedLoans.filter((l) => l.status === 'overdue').length
+  const upcomingLoans = useMemo(
+    () =>
+      normalizedLoans
+        .filter((loan) => loan.status === 'active' && isWithinNextDays(loan.due_date, 15))
+        .sort((a, b) => a.due_date.localeCompare(b.due_date))
+        .slice(0, 5),
+    [normalizedLoans]
+  )
   const openBalance = useMemo(
     () => normalizedLoans
       .filter((loan) => loan.status !== 'paid')
       .reduce((sum, loan) => sum + Number(loan.remaining_balance), 0),
     [normalizedLoans]
   )
-  const dueSoonCount = useMemo(
-    () => normalizedLoans.filter((loan) => loan.status === 'active' && isWithinNextDays(loan.due_date, 7)).length,
-    [normalizedLoans]
-  )
+  const dueSoonCount = upcomingLoans.length
   const collectedToday = useMemo(() => {
     const today = new Date()
     return payments
@@ -158,7 +163,7 @@ export default function DashboardPage() {
           <p className="mt-1 text-xs text-slate-500">Cobros registrados en la jornada actual.</p>
         </div>
         <div className="summary-tile">
-          <p className="summary-label">Por vencer en 7 días</p>
+          <p className="summary-label">Próximos 15 días</p>
           <p className="summary-value">{dueSoonCount}</p>
           <p className="mt-1 text-xs text-slate-500">Útil para anticipar seguimiento antes del atraso.</p>
         </div>
@@ -236,6 +241,45 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      <div className="card mt-6 p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Próximos a vencer</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Préstamos activos con fecha de vencimiento dentro de los próximos 15 días.
+            </p>
+          </div>
+          <Link href="/loans" className="text-sm font-medium text-teal-600 hover:underline">
+            Ver cartera
+          </Link>
+        </div>
+        {upcomingLoans.length === 0 ? (
+          <StatusBanner
+            variant="info"
+            title="No hay vencimientos cercanos"
+            message="Cuando un préstamo activo esté próximo a vencer, aparecerá aquí para facilitar el seguimiento."
+          />
+        ) : (
+          <div className="space-y-3">
+            {upcomingLoans.map((loan) => (
+              <Link
+                key={loan.id}
+                href={`/loans/${loan.id}`}
+                className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">Vence {new Date(loan.due_date).toLocaleDateString('es-CO')}</p>
+                  <p className="text-sm text-slate-500">
+                    Saldo pendiente: {formatCurrency(Number(loan.remaining_balance))}
+                  </p>
+                </div>
+                <span className="text-sm font-medium text-teal-600">Abrir préstamo</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card mt-8 p-4 sm:mt-10 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold text-slate-900 sm:mb-6">Cobros por mes</h2>
         {payments.length === 0 ? (
@@ -254,7 +298,7 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Ganancia proyectada por mes</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Se calcula a partir del calendario estimado de cada préstamo activo o pendiente.
+              En préstamos mensuales, usa la tasa como ganancia estimada de cada mes del plazo.
             </p>
           </div>
           <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm">
