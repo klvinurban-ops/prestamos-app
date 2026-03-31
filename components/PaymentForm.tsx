@@ -20,6 +20,29 @@ type Props = {
   }) => void
 }
 
+function parseMoneyInput(raw: string) {
+  const cleaned = raw.replace(/[^\d,.-]/g, '').trim()
+  if (!cleaned) return 0
+
+  const hasComma = cleaned.includes(',')
+  const hasDot = cleaned.includes('.')
+
+  if (hasComma && hasDot) {
+    const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+    return Number(normalized) || 0
+  }
+
+  if (hasDot && !hasComma) {
+    const dotParts = cleaned.split('.')
+    const looksLikeThousands = dotParts.length > 1 && dotParts.every((part, index) => index === 0 || part.length === 3)
+    if (looksLikeThousands) {
+      return Number(cleaned.replace(/\./g, '')) || 0
+    }
+  }
+
+  return Number(cleaned.replace(',', '.')) || 0
+}
+
 export default function PaymentForm({ loans, loading = false, initialLoanId, onSuccess }: Props) {
   const [loanId, setLoanId] = useState('')
   const [amount, setAmount] = useState('')
@@ -31,12 +54,12 @@ export default function PaymentForm({ loans, loading = false, initialLoanId, onS
   const activeLoans = loans.filter((l) => l.status === 'active' || l.status === 'overdue')
   const selectedLoan = activeLoans.find((l) => l.id === loanId)
   const maxPayment = selectedLoan ? Number(selectedLoan.remaining_balance) : 0
-  const amountNum = parseFloat(amount) || 0
+  const amountNum = parseMoneyInput(amount)
   const projectedBalance = Math.max(0, maxPayment - amountNum)
 
   useEffect(() => {
     if (selectedLoan && amount) {
-      const num = parseFloat(amount)
+      const num = parseMoneyInput(amount)
       if (num > maxPayment) setAmount(String(maxPayment))
     }
   }, [selectedLoan, maxPayment])
@@ -159,14 +182,12 @@ export default function PaymentForm({ loans, loading = false, initialLoanId, onS
           <label className="label" htmlFor="amount">Monto *</label>
           <input
             id="amount"
-            type="number"
-            step="0.01"
-            min="0"
-            max={maxPayment}
+            type="text"
+            inputMode="decimal"
             className="input"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
+            placeholder="0 o 200.000"
             required
           />
         </div>

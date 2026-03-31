@@ -19,6 +19,81 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedLoanIdFromUrl, setSelectedLoanIdFromUrl] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
+  const [editingAmount, setEditingAmount] = useState('')
+  const [editingDate, setEditingDate] = useState('')
+  const [editingNotes, setEditingNotes] = useState('')
+  const [editingBusy, setEditingBusy] = useState(false)
+
+  function normalizeMoneyInput(raw: string) {
+    const cleaned = raw.replace(/[^\d,.-]/g, '').trim()
+    if (!cleaned) return 0
+    if (cleaned.includes(',') && cleaned.includes('.')) {
+      return Number(cleaned.replace(/\./g, '').replace(',', '.')) || 0
+    }
+    const dotParts = cleaned.split('.')
+    const looksLikeThousands = cleaned.includes('.') && dotParts.length > 1 && dotParts.every((part, index) => index === 0 || part.length === 3)
+    if (looksLikeThousands) {
+      return Number(cleaned.replace(/\./g, '')) || 0
+    }
+    return Number(cleaned.replace(',', '.')) || 0
+  }
+
+  function startEdit(payment: PaymentWithLoan) {
+    setEditingPaymentId(payment.id)
+    setEditingAmount(String(Number(payment.amount)))
+    setEditingDate(payment.payment_date.slice(0, 10))
+    setEditingNotes(payment.notes ?? '')
+  }
+
+  async function saveEdit(paymentId: string) {
+    const amount = normalizeMoneyInput(editingAmount)
+    if (amount <= 0 || !editingDate) return
+    setEditingBusy(true)
+    try {
+      const response = await fetch('/api/payments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          payment_id: paymentId,
+          amount,
+          payment_date: editingDate,
+          notes: editingNotes.trim() || null,
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'No se pudo editar el pago')
+      await load()
+      setSuccessMessage('Pago editado correctamente.')
+      setEditingPaymentId(null)
+    } catch (error) {
+      setSuccessMessage(error instanceof Error ? error.message : 'No se pudo editar el pago.')
+    } finally {
+      setEditingBusy(false)
+    }
+  }
+
+  async function deletePayment(paymentId: string) {
+    setEditingBusy(true)
+    try {
+      const response = await fetch('/api/payments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ payment_id: paymentId }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'No se pudo eliminar el pago')
+      await load()
+      setSuccessMessage('Pago eliminado correctamente.')
+      if (editingPaymentId === paymentId) setEditingPaymentId(null)
+    } catch (error) {
+      setSuccessMessage(error instanceof Error ? error.message : 'No se pudo eliminar el pago.')
+    } finally {
+      setEditingBusy(false)
+    }
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -86,7 +161,25 @@ export default function PaymentsPage() {
                   </div>
                   <p className="shrink-0 font-semibold text-slate-900">{formatCurrency(Number(p.amount))}</p>
                 </div>
-                <p className="mt-3 text-sm text-slate-500">{p.notes || 'Sin notas'}</p>
+                {editingPaymentId === p.id ? (
+                  <div className="mt-3 space-y-2">
+                    <input className="input" value={editingAmount} onChange={(e) => setEditingAmount(e.target.value)} placeholder="Monto" />
+                    <input className="input" type="date" value={editingDate} onChange={(e) => setEditingDate(e.target.value)} />
+                    <input className="input" value={editingNotes} onChange={(e) => setEditingNotes(e.target.value)} placeholder="Notas" />
+                    <div className="flex gap-2">
+                      <button type="button" className="btn-primary" disabled={editingBusy} onClick={() => saveEdit(p.id)}>Guardar</button>
+                      <button type="button" className="btn-secondary" disabled={editingBusy} onClick={() => setEditingPaymentId(null)}>Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="mt-3 text-sm text-slate-500">{p.notes || 'Sin notas'}</p>
+                    <div className="mt-3 flex gap-3">
+                      <button type="button" className="text-slate-600" onClick={() => startEdit(p)} title="Editar pago">✏️</button>
+                      <button type="button" className="text-red-600" onClick={() => deletePayment(p.id)} title="Eliminar pago">🗑️</button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -101,17 +194,49 @@ export default function PaymentsPage() {
                       <th className="px-4 py-3 font-medium text-slate-700">Préstamo / Cliente</th>
                       <th className="px-4 py-3 font-medium text-slate-700">Monto</th>
                       <th className="px-4 py-3 font-medium text-slate-700">Notas</th>
+                      <th className="px-4 py-3 font-medium text-slate-700">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {payments.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3 text-slate-600">{formatDate(p.payment_date)}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {editingPaymentId === p.id ? (
+                            <input className="input" type="date" value={editingDate} onChange={(e) => setEditingDate(e.target.value)} />
+                          ) : (
+                            formatDate(p.payment_date)
+                          )}
+                        </td>
                         <td className="px-4 py-3 font-medium text-slate-900">
                           {(p.loans as LoanWithClient)?.clients?.name ?? '—'}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{formatCurrency(Number(p.amount))}</td>
-                        <td className="px-4 py-3 text-slate-500">{p.notes || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {editingPaymentId === p.id ? (
+                            <input className="input" value={editingAmount} onChange={(e) => setEditingAmount(e.target.value)} />
+                          ) : (
+                            formatCurrency(Number(p.amount))
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">
+                          {editingPaymentId === p.id ? (
+                            <input className="input" value={editingNotes} onChange={(e) => setEditingNotes(e.target.value)} />
+                          ) : (
+                            p.notes || '—'
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {editingPaymentId === p.id ? (
+                            <div className="flex gap-2">
+                              <button type="button" className="btn-primary" disabled={editingBusy} onClick={() => saveEdit(p.id)}>Guardar</button>
+                              <button type="button" className="btn-secondary" disabled={editingBusy} onClick={() => setEditingPaymentId(null)}>Cancelar</button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-3">
+                              <button type="button" className="text-slate-600" onClick={() => startEdit(p)} title="Editar pago">✏️</button>
+                              <button type="button" className="text-red-600" onClick={() => deletePayment(p.id)} title="Eliminar pago">🗑️</button>
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
